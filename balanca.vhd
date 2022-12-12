@@ -15,14 +15,12 @@ entity balanca is
         peso   			 : in    unsigned(W_16 - 1 downto 0) := (others => '0');
         peso_permitido   : in    unsigned(W_16 - 1 downto 0) := (others => '0');
 		  valor_por_kg_excedente  : in unsigned(W_16 - 1 downto 0) := (others => '0');
-        abertura_fechamento_cancela_1 : in  std_logic := '0';
-        abertura_fechamento_cancela_2 : in  std_logic := '1';
         valor_multa      : out unsigned(2 * W_16 - 1 downto 0) := (others => '0');
         numero_controle  : out std_logic_vector(4 * W_16 - 1 downto 0) := (others => '0');
         semaforo_1 		 : out std_logic;
-        semaforo_2 		 : out std_logic;
-        cancela_1  		 : out std_logic;
-        cancela_2  		 : out std_logic
+        semaforo_2 		 : out std_logic
+--        cancela_1  		 : out std_logic;
+--        cancela_2  		 : out std_logic
 
     );
 
@@ -62,6 +60,14 @@ architecture arch of balanca is
       Output : out unsigned(2* W_16 - 1  downto 0)
 	);
 	end component;
+	
+	component cancela is
+   port( 
+		CLK	 : in std_logic;
+		Input  : in std_logic;
+		Output : out std_logic
+	);
+	end component;
 
 	signal state 			: state_type;
 	signal new_state		: state_type;
@@ -69,7 +75,11 @@ architecture arch of balanca is
 	signal aplicar_multa : std_logic;
 	signal tmp_peso_excedente : unsigned(W_16 - 1  downto 0);
 	signal tmp_valor_multa    : unsigned(2 * W_16 - 1  downto 0);
-	
+	signal cancela_1 		: std_logic;
+   signal cancela_2  	: std_logic;
+   signal abertura_fechamento_cancela_1 : std_logic := '0';
+   signal abertura_fechamento_cancela_2 : std_logic := '1';
+
 begin
   
 instancia_comparador: comparador port map(
@@ -91,6 +101,18 @@ instancia_multiplicador: multiplicador port map (
 			Output => tmp_valor_multa
 );
 
+instancia_cancela_1: cancela port map (
+			CLK   => CLOCK,
+			Input => cancela_1, 
+			Output => abertura_fechamento_cancela_1
+);
+
+instancia_cancela_2: cancela port map (
+			CLK   => CLOCK,
+			Input => cancela_2, 
+			Output => abertura_fechamento_cancela_2
+);
+
 process(clock,comando)
 	begin
 	if (state /= new_state) then
@@ -100,7 +122,7 @@ process(clock,comando)
 		state <= new_state;
 	end if;
 	if (comando = '0') then 
-	 botao <= true;
+		botao <= true;
 	end if;
 end process;
   
